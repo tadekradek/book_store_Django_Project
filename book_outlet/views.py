@@ -1,5 +1,24 @@
-from django.shortcuts import render
+from django.shortcuts import render,get_object_or_404
+from django.http import Http404
 
+from book_outlet.models import Book
+
+def index(request):
+    books = Book.objects.all() # here, why accessing and calling database, you are about to use exactly the same commands as in the shell earlier
+    return render(request, "book_outlet/index.html",{"books":books})
+
+def book_detail(request, id):
+    # try:
+    #     book = Book.objects.get(id = id) # pk is a special key (primary key), that you can always use when you would like to adress the key set up as primary
+    # except:
+    #     raise Http404()
+    book = get_object_or_404(Book, pk=id)
+    return render(request, "book_outlet/book_detail.html",{
+        "title": book.title,
+        "author": book.author,
+        "rating": book.rating,
+        "is_bestseller":book.is_bestselling
+        })
 # Create your views here.   
 
 #  it is possible to play with the data through the consol, in order to do so, run :

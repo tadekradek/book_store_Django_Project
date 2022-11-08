@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinLengthValidator, MaxValueValidator
+from django.urls import reverse
 
 # Create your models here. #every time I edit models.py file, I need to make sure that I make migration to sent instruction for Django how to update database
 
@@ -9,6 +10,9 @@ class Book(models.Model): #my class that I just created inherits from Django-spe
                                                                                               # selected from database based on some validator, e.g max, min
     author = models.CharField(null = True, max_length = 100) #now I allowed to fill blanks with null value, alternative is blank = True to allow empty fields in database - not allowed by default                                              
     is_bestselling = models.BooleanField(default = False)
+
+    def get_absolute_url(self):
+        return reverse("book-detail", args=[self.id]) # very useful to create url creation logic once and utilize anywhere in the code
 
     def __str__(self):
         return f"{self.title} ({self.rating})"   # adding only a method does not require to make a migration, as it is only needed when atributes are changed
@@ -41,3 +45,26 @@ Select an option:
 # however, it is not allowed to use .delete() to erase a single attribute, you just need to do it by updating
 
 # Book.objects.create() -> basically the same as Book(title="...").save() but just skips the save at the end
+
+# Book.objects.get(id=3) -> in the argument you can specify that selection criteria, REMEMBER - get will always return only ONE data entry, if multiple objects would be found, it will return error
+# Book.objects.filter() -> unlike .get() is able to return more than one object
+# Book.objects.filter(rating<3) -> would return error, as the parameter is invalid syntax in python, however
+# Book.objects.filter(rating__lt=3) -> Django enables special way to customize the condition  - Field lookups - to check official docs
+# Book.objects.filter(rating__lt=3, title__contains="Story") -> to remember, __contains is not case sensitive
+# from django.db.models import Q -> special class from django that allows to write queries containing or condition
+# Book.objects.filter(Q(rating__lt=3)|Q(is_bestselling=True))  using pipe to define OR condition and also Q() as query in constructor
+# Book.objects.filter(Q(rating__lt=3)|Q(is_bestselling=True), Q(author="Stephen King")) OR and AND combination
+
+#Performance
+# it is possible to chain filter methods, as simply running Book.objects.filter() returns an object, which is query, and its is possible to do the same once again with different criteria
+# also, performance for accessing database is important
+# notation
+# bestsellers = Book.objects.filter(is_bestselling = True) is not yet producing result from database, but bestsellers is now saved as query to run
+# amazing_bestsellers = bestsellers.filter(rating__gt=4)
+#>>> amazing_bestsellers
+#<QuerySet []> database was not touched yet, which is good for performance
+# django runs the query after print(bestsellers)
+# it is important, from performance perspective, to hit the database as low number of times as possible
+
+# Entry.objects.filter(pub_date__year=2005).delete() works when you want to delete instances that you selected with the filter condition
+#
