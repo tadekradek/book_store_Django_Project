@@ -1,18 +1,38 @@
 from django.db import models
 from django.core.validators import MinLengthValidator, MaxValueValidator
 from django.urls import reverse
+from django.utils.text import slugify #module to transform text (title) into slugfield
 
 # Create your models here. #every time I edit models.py file, I need to make sure that I make migration to sent instruction for Django how to update database
 
+class Author(models.Model):
+    first_name = models.CharField(max_length = 100)
+    last_name = models.CharField(max_length = 100)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+
+
 class Book(models.Model): #my class that I just created inherits from Django-specific models.Model class that is useful and provides built-in functionalites
-    title = models.CharField(max_length = 50)
-    rating = models.IntegerField(validators = [MinLengthValidator(1), MaxValueValidator(5)])  # from a dedicated django library core.validators, some useful feature to customize elements
+    title = models.CharField(default = "", max_length = 50)
+    rating = models.IntegerField(default = 1)  # from a dedicated django library core.validators, some useful feature to customize elements
                                                                                               # selected from database based on some validator, e.g max, min
-    author = models.CharField(null = True, max_length = 100) #now I allowed to fill blanks with null value, alternative is blank = True to allow empty fields in database - not allowed by default                                              
+    #author = models.CharField(default = "", null = True, max_length = 100) #now I allowed to fill blanks with null value, alternative is blank = True to allow empty fields in database - not allowed by default                                              
+    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="books") #now definining attribute by pointing to another class, on_delete parameter decides what should happen with related models if one of those gets deleted,
+                                                                 # CASCADE says that if author gets deleted, all books by these author are deleted in cascaded way, alternative to try PROTECT, SET_NULL
     is_bestselling = models.BooleanField(default = False)
+    slug = models.SlugField(default = "", blank=True,
+                            null=False,  db_index=True)   # Django-specific slug value type, enusre that whatever is stored inside, will be in format harry-potter-1,
+                                                                       # adding db_index would make searching a bit more efficient, however, you should not add index to every column, as the operation as it is decreases the performance
+                                                                       # choose wisely, attach index to the column you are using the most for queries
+
 
     def get_absolute_url(self):
-        return reverse("book-detail", args=[self.id]) # very useful to create url creation logic once and utilize anywhere in the code
+        return reverse("book-detail-slug", args=[self.slug]) # very useful to create url creation logic once and utilize anywhere in the code
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.title)
+        super().save(*args, **kwargs) #apart from overwriting save method, we need to ensure that the built-in django save method is also executed
 
     def __str__(self):
         return f"{self.title} ({self.rating})"   # adding only a method does not require to make a migration, as it is only needed when atributes are changed
@@ -68,3 +88,10 @@ Select an option:
 
 # Entry.objects.filter(pub_date__year=2005).delete() works when you want to delete instances that you selected with the filter condition
 #
+
+# in order to provide more detailed information related to database, like number of all books, sum of ratings etc, there are aggregation methods in django
+#
+
+# books_by_rowling = Book.objects.filter(author__last_name="Rowling") filtering by data being in relationship is very intuitive, very powerful method to query across relations
+# we can also access by adverse relation
+# >>> jkr.book_set -> we are accessing the inverse relation

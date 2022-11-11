@@ -7,8 +7,11 @@
 {% block content %}
     <ul>
         {% for book in books %}
-            <li><a href="{{book.get_absolute_url}}">{{book.title}} (Rating: {{book.rating}})</a></li>
+            <li><a href="{{book.get_absolute_url}}">{{book.title}}</a> (Rating: {{book.rating}})</li>
         {% endfor %}
     </ul>
+
+<h1>There are {{total_number_of_books}}, and the average rating equals to {{avg_rating.rating__avg}}.</h1> 
+
 {% endblock content %}
 
