@@ -5,9 +5,36 @@ from django.utils.text import slugify #module to transform text (title) into slu
 
 # Create your models here. #every time I edit models.py file, I need to make sure that I make migration to sent instruction for Django how to update database
 
+
+class Country(models.Model):
+    name = models.CharField(max_length=80)
+    code = models.CharField(max_length=2)
+    
+    def __str__(self):
+        return f"{self.name}"
+
+    class Meta:
+        verbose_name_plural = "Countries"
+
+
+class Address(models.Model):
+    street = models.CharField(max_length=80)
+    postal_code = models.CharField(max_length=5)
+    city = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"{self.street}, {self.postal_code}, {self.city}"
+
+    class Meta:  # nested class in class is standard, but advanced and not often used python syntax
+        verbose_name_plural = "Address Entries" #this is useful feature for amending the way how name is output
+    
 class Author(models.Model):
     first_name = models.CharField(max_length = 100)
     last_name = models.CharField(max_length = 100)
+    address = models.OneToOneField(Address, on_delete=models.CASCADE,null=True) #models.OneToOneField is a classs dedicated to one to one relations
+
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
@@ -18,14 +45,20 @@ class Book(models.Model): #my class that I just created inherits from Django-spe
     rating = models.IntegerField(default = 1)  # from a dedicated django library core.validators, some useful feature to customize elements
                                                                                               # selected from database based on some validator, e.g max, min
     #author = models.CharField(default = "", null = True, max_length = 100) #now I allowed to fill blanks with null value, alternative is blank = True to allow empty fields in database - not allowed by default                                              
-    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="books") #now definining attribute by pointing to another class, on_delete parameter decides what should happen with related models if one of those gets deleted,
-                                                                 # CASCADE says that if author gets deleted, all books by these author are deleted in cascaded way, alternative to try PROTECT, SET_NULL
+    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True) #now definining attribute by pointing to another class, on_delete parameter decides what should happen with related models if one of those gets deleted,
+                                                                 # CASCADE says that if author gets deleted, all books by these author are deleted in cascaded way, 
+                                                                 # alternative to try PROTECT, SET_NULL
+                                                                 # ForeignKey class is dedicated to one-to-many connections
     is_bestselling = models.BooleanField(default = False)
     slug = models.SlugField(default = "", blank=True,
                             null=False,  db_index=True)   # Django-specific slug value type, enusre that whatever is stored inside, will be in format harry-potter-1,
                                                                        # adding db_index would make searching a bit more efficient, however, you should not add index to every column, as the operation as it is decreases the performance
                                                                        # choose wisely, attach index to the column you are using the most for queries
-
+    published_countries = models.ManyToManyField(Country,related_name="books") #thats how you set up many-to-many relation, you cannot add on_delete property here, because many-to-many, because there are more t
+                                                          # than only two relations as for one-to-many and one-to-one, and we dont want to store the list 
+                                                          # for many-to-many relations, there is no direct assignment available like author.published_countries = germany, because
+                                                          # due to many to many nature of relation, it is not single value but its a list of values, so we are using 
+                                                          #author.published_countries.add()
 
     def get_absolute_url(self):
         return reverse("book-detail-slug", args=[self.slug]) # very useful to create url creation logic once and utilize anywhere in the code

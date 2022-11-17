@@ -8,6 +8,9 @@
           "**/templates/**/*": "django-txt",
           "**/requirements{/**,*}.{txt,in}": "pip-requirements"
       },
-      "emmet.includeLanguages": {"django-html":"html"}
+    "emmet.includeLanguages": {
+        "django-html": "html"
+    },
+    "python.linting.enabled": false
 
 }
